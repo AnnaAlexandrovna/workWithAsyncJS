@@ -1,0 +1,141 @@
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Document object model</title>
+</head>
+<body style='background-color:#ffffff;'>
+	<button onclick="block()">Блокирующий вызов</button>
+	<br>
+	<br>
+	<button onclick="call1()">Асинхронный колхозный вызов</button>
+	<br>
+	<br>
+	<button onclick="call2()">Асинхронный вызов с Promise</button>
+	<br>
+	<br>
+	<button onclick="call3()">Асинхронный вызов с async function</button>
+	<br>
+	<br>
+	<button onclick="call4()">Асинхронный вызов с Worker</button>
+	<br>
+	<br>
+	<output id="sum"></output>
+	<br>
+	<br>
+	<div id="work"></div><script>
+let sum = 0;
+let str = 'Working.';
+let counter = 0;
+let idOfWritePointsInterval = writePoints();
+document.getElementById("sum").innerHTML = "sum - " + sum;
+
+function block(){
+	console.log("Расчет начат");
+	for(let i = 0; i< 100000000000000; i++){
+		sum+=i;
+		console.log(sum);
+		if(i== 99999999999999){
+			console.log("Расчет окончен");
+			str="Done"; 
+			clearInterval(idOfWritePointsInterval);
+			document.getElementById("work").innerHTML = str;
+		}
+	}
+}
+
+function call1(){
+	console.log("Расчет начат");
+	let intervaiId = setInterval(()=>{
+		counter++;
+			sum+=counter;
+			document.getElementById("sum").innerHTML = "sum - " + sum;
+			if(counter== 999999999999999){
+				counter=0;
+				clearInterval(intervaiId);
+				console.log("Расчет окончен");
+				str="Done"; 
+				clearInterval(idOfWritePointsInterval);
+				document.getElementById("work").innerHTML = str;
+			}
+		},0);
+}
+
+function call2(){
+	console.log("Расчет начат");
+	let promise = new Promise(function(resolve,reject){
+		let intervaiId = setInterval(()=>{
+		counter++;
+			sum+=counter;
+			document.getElementById("sum").innerHTML = "sum - " + sum;
+			if(counter== 999999999999999){
+				counter=0;
+				resolve(sum);
+				clearInterval(intervaiId);
+			}
+		},0);
+	});
+	promise.then((sum)=>{console.log("Расчет окончен"); str="Done"; clearInterval(idOfWritePointsInterval); document.getElementById("work").innerHTML = str;})
+}
+
+async function call3(){
+	console.log("Расчет начат");
+	await new Promise(function(resolve,reject){
+		let intervaiId = setInterval(()=>{
+		counter++;
+			sum+=counter;
+			document.getElementById("sum").innerHTML = "sum - " + sum;
+			if(counter== 999999999999999){
+				counter=0;
+				resolve(sum);
+				clearInterval(intervaiId);
+			}
+		},0);
+	});
+	console.log("Расчет окончен"); str="Done"; 
+	clearInterval(idOfWritePointsInterval); 
+	document.getElementById("work").innerHTML = str;
+}
+
+async function call4(){
+	console.log("Расчет начат");
+
+	if (window.Worker){
+		console.log("Создаем worker");
+		let myWorker = new Worker("worker.js");
+		myWorker.postMessage(0);
+		myWorker.onmessage = function(e){
+		sum=e.data.sum;
+		document.getElementById("sum").innerHTML = "sum - " + sum;
+		if(e.data.i==999999999999999){
+			console.log("Расчет окончен"); str="Done"; 
+			clearInterval(idOfWritePointsInterval); 
+			document.getElementById("work").innerHTML = str;
+			}
+		}
+	}else{
+		console.log("Worker не поддерживается");
+	}
+}
+
+function writePoints(){
+	document.getElementById("work").innerHTML = str;
+	let idOfWritePointsInterval = setInterval(()=>{
+		str+='.';
+		document.getElementById("work").innerHTML = str;
+		if (str.length == 20){
+			let ownEvent = new Event ("Сбросить точки",{bubbles: true});
+			document.dispatchEvent(ownEvent);
+		}
+	},1000);
+	return idOfWritePointsInterval;
+}
+
+function resetPoints(){
+	str = 'Working.';
+	document.getElementById("work").innerHTML = str;
+}
+
+document.addEventListener("Сбросить точки", (event) =>{ resetPoints();});
+</script>
+</body>
+</html>
